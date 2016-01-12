@@ -18,7 +18,6 @@ import (
     "log"
     "os"
     "sync"
-    "sync/atomic"
 )
 
 // DirectLog represents a file-backed logger and enforces a standardized
@@ -26,7 +25,7 @@ import (
 // backing file.
 type DirectLog struct {
     baseDir  string
-    enabled  int32
+    enabled  bool
     file     *os.File
     lock     sync.RWMutex
     logger   *log.Logger
@@ -47,7 +46,7 @@ func (this *DirectLog) Close() {
     this.lock.Lock()
     defer this.lock.Unlock()
 
-    this.enabled = 0
+    this.enabled = false
 
     this.print(xlog.FormatLogMsg(
         this.name,
@@ -59,15 +58,12 @@ func (this *DirectLog) Close() {
     this.file.Close()
 }
 
-// Disable temporarily disables the DirectLog instance. New calls to Print will have no
-// effect.
-func (this *DirectLog) Disable() {
-    atomic.StoreInt32(&this.enabled, 0)
-}
+// SetEnabled temporarily enables/disables the DirectLog instance.
+func (this *DirectLog) SetEnabled(enabled bool) {
+    this.lock.Lock()
+    defer this.lock.Unlock()
 
-// Enable re-enables an DirectLog instance.
-func (this *DirectLog) Enable() {
-    atomic.StoreInt32(&this.enabled, 1)
+    this.enabled = enabled
 }
 
 // Name returns the friendly name of the log. 
@@ -84,7 +80,7 @@ func (this *DirectLog) Print(msg string) {
     this.lock.RLock()
     defer this.lock.RUnlock()
 
-    if atomic.LoadInt32(&this.enabled) < 1 {
+    if !this.enabled {
         return
     }
 

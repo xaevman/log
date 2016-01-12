@@ -42,8 +42,7 @@ const (
 type FLog interface {
     BaseDir() string
     Close()
-    Disable()
-    Enable()
+    SetEnabled(bool)
     Name() string
     Print(msg string)
 }
@@ -70,7 +69,7 @@ func New(name, logPath string, logType int) FLog {
         bLog := BufferedLog {
             baseDir  : logPath,
             chClose  : make(chan interface{}, 0),
-            enabled  : 1,
+            enabled  : true,
             flushSec : DefaultFlushIntervalSec,
             name     : name,
         }
@@ -92,7 +91,7 @@ func New(name, logPath string, logType int) FLog {
 
         dLog := DirectLog {
             baseDir : logPath,
-            enabled : 1,
+            enabled : true,
             name    : name,
         }
 

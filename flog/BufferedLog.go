@@ -32,7 +32,7 @@ type BufferedLog struct {
     baseDir  string
     buffer   bytes.Buffer
     chClose  chan interface{}
-    enabled  int32
+    enabled  bool
     file     *os.File
     flushSec int32
     lock     sync.RWMutex
@@ -54,7 +54,7 @@ func (this *BufferedLog) Close() {
     this.lock.Lock()
     defer this.lock.Unlock()
 
-    this.enabled = 0
+    this.enabled = false
 
     this.print(xlog.FormatLogMsg(this.name, "==== Close log ====", 2))
 
@@ -69,15 +69,12 @@ func (this *BufferedLog) Close() {
     this.file.Close()
 }
 
-// Disable temporarily disables the BufferedLog instance. New calls to Print will have no
-// effect.
-func (this *BufferedLog) Disable() {
-    atomic.StoreInt32(&this.enabled, 0)
-}
+// SetEnabled temporarily enables/disables the log instance.
+func (this *BufferedLog) SetEnabled(enabled bool) {
+    this.lock.Lock()
+    defer this.lock.Unlock()
 
-// Enable re-enables an BufferedLog instance.
-func (this *BufferedLog) Enable() {
-    atomic.StoreInt32(&this.enabled, 1)
+    this.enabled = enabled
 }
 
 // FlushInterval returns the interval between log flushes in seconds.
@@ -99,7 +96,7 @@ func (this *BufferedLog) Print(msg string) {
     this.lock.RLock()
     defer this.lock.RUnlock()
 
-    if atomic.LoadInt32(&this.enabled) < 1 {
+    if !this.enabled {
         return
     }
 

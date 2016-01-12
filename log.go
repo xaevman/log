@@ -1,3 +1,17 @@
+//  ---------------------------------------------------------------------------
+//
+//  log.go
+//
+//  Copyright (c) 2015, Jared Chavez. 
+//  All rights reserved.
+//
+//  Use of this source code is governed by a BSD-style
+//  license that can be found in the LICENSE file.
+//
+//  -----------
+
+// Package log provides interfaces, basic types and formatting helpers
+// for common application logging tasks.
 package log
 
 import (
@@ -12,15 +26,28 @@ import (
 
 var timeFormat = "2006/01/02 15:04:05.000000"
 
+// LogCloser represents the interface for a closable log object, such
+// as those provided by file-backed logging.
+type LogCloser interface {
+    Close()
+}
+
 // Log represents the interface for a generalized log object.
 type LogNotify interface {
     Print(msg string)
+}
+
+// LogToggler represents the interface needed to temporarily enabled/disable
+// a given logger.
+type LogToggler interface {
+    SetEnabled(bool)
 }
 
 // LogBuffer holds a specified number of logs in memory for rendering
 // by the http logs Uri.
 type LogBuffer struct {
     changed bool
+    enabled bool
     lock    sync.RWMutex
     logs    *list.List
     maxSize int
@@ -29,6 +56,7 @@ type LogBuffer struct {
 // NewLogBuffer returns a pointer to a new LogBuffer instance.
 func NewLogBuffer(maxSize int) *LogBuffer {
     logBuffer := &LogBuffer {
+        enabled : true,
         logs    : list.New(),
         maxSize : maxSize,
     }
@@ -52,6 +80,10 @@ func (this *LogBuffer) HasChanged() bool {
 func (this *LogBuffer) Print(msg string) {
     this.lock.Lock()
     defer this.lock.Unlock()
+
+    if !this.enabled {
+        return
+    }
 
     this.logs.PushFront(msg)
 
@@ -77,6 +109,14 @@ func (this *LogBuffer) ReadAll() []string {
     return results
 }
 
+// SetEnabled temporarily enables/disables the logger.
+func (this *LogBuffer) SetEnabled(enabled bool) {
+    this.lock.Lock()
+    defer this.lock.Unlock()
+
+    this.enabled = enabled
+}
+
 // SetMaxSize changes the configured maxSize for the buffer, and chops
 // the oldest entries off the buffer in the case that it is currently larger
 // than the newly configured maxSize.
@@ -84,14 +124,14 @@ func (this *LogBuffer) SetMaxSize(maxSize int) {
     this.lock.Lock()
     defer this.lock.Unlock()
 
-    this.maxSize = maxSize
-
-    diff := this.logs.Len() - maxSize
+    diff := maxSize - this.logs.Len()
     if diff < 0 {
         for i := 0; i > diff; i-- {
             this.logs.Remove(this.logs.Back())
         }
     }
+
+    this.maxSize = maxSize
 }
 
 // FormatLogMsg formats a log given the standard logging format
