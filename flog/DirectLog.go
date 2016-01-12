@@ -13,10 +13,10 @@
 package flog
 
 import (
-    "fmt"
+    xlog "github.com/xaevman/log"
+
     "log"
     "os"
-    "strings"
     "sync"
     "sync/atomic"
 )
@@ -49,9 +49,10 @@ func (this *DirectLog) Close() {
 
     this.enabled = 0
 
-    this.print(fmt.Sprintf(
-        "==== Close log [%s] ====",
-        strings.ToUpper(this.name),
+    this.print(xlog.FormatLogMsg(
+        this.name,
+        "==== Close log ====",
+        3,
     ))
 
     this.file.Sync()

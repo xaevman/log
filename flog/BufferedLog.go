@@ -13,12 +13,12 @@
 package flog
 
 import (
+    xlog "github.com/xaevman/log"
+
     "bytes"
-    "fmt"
     "io"
     "log"
     "os"
-    "strings"
     "sync"
     "sync/atomic"
     "time"
@@ -56,10 +56,7 @@ func (this *BufferedLog) Close() {
 
     this.enabled = 0
 
-    this.print(fmt.Sprintf(
-        "==== Close log [%s] ====", 
-        strings.ToUpper(this.name),
-    ))
+    this.print(xlog.FormatLogMsg(this.name, "==== Close log ====", 2))
 
     // stop flush routine
     this.chClose <- nil
@@ -126,9 +123,10 @@ func (this *BufferedLog) asyncFlush() {
         select {
             case <-this.chClose:
                 run = false
-                this.print(fmt.Sprintf(
-                    "Async log shutdown [%s]", 
-                    strings.ToUpper(this.name),
+                this.print(xlog.FormatLogMsg(
+                    this.name, 
+                    "Async log shutdown", 
+                    3,
                 ))
                 continue
             case <-time.After(time.Duration(flushSec) * time.Second):
