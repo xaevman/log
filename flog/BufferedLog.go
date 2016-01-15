@@ -52,15 +52,13 @@ func (this *BufferedLog) BaseDir() string {
 // then closes the backing log file.
 func (this *BufferedLog) Close() {
     this.lock.Lock()
-    defer this.lock.Unlock()
-
     this.enabled = false
+    this.lock.Unlock()
 
     this.print(xlog.FormatLogMsg(this.name, "==== Close log ====", 2))
 
     // stop flush routine
     this.chClose <- nil
-    <-this.chClose
 
     // flush logs
     this.flushLogs()
@@ -94,11 +92,10 @@ func (this *BufferedLog) Name() string {
 // is enabled.
 func (this *BufferedLog) Print(msg string) {
     this.lock.RLock()
-    defer this.lock.RUnlock()
-
     if !this.enabled {
         return
     }
+    this.lock.RUnlock()
 
     this.print(msg)
 }
@@ -136,6 +133,9 @@ func (this *BufferedLog) asyncFlush() {
 
 // flushLogs copies the contents of the log buffer into the open log file.
 func (this *BufferedLog) flushLogs() {
+    this.lock.Lock()
+    defer this.lock.Unlock()
+
     _, err := io.Copy(this.file, &this.buffer)
     if err != nil {
         panic(err)
@@ -148,6 +148,9 @@ func (this *BufferedLog) flushLogs() {
 }
 
 func (this *BufferedLog) print(msg string) {
+    this.lock.Lock()
+    defer this.lock.Unlock()
+    
     log.Print(msg)
     this.logger.Print(msg)
 }
