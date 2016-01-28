@@ -15,8 +15,8 @@
 package log
 
 import (
-    "bytes"
     "container/list"
+    "encoding/json"
     "fmt"
     "path/filepath"
     "runtime"
@@ -116,25 +116,13 @@ func (this *LogBuffer) MarshalJSON() ([]byte, error) {
     this.lock.RLock()
     defer this.lock.RUnlock()
 
-    var buffer bytes.Buffer
+    logs := make([]interface{}, 0, this.logs.Len())
 
-    buffer.WriteString("[")
-    for e := this.logs.Front(); e != nil; {
-        buffer.WriteString("\"")
-        buffer.WriteString(strings.TrimSpace(e.Value.(string)))
-        buffer.WriteString("\"")
-
-        next := e.Next()
-        if next == nil {
-            break
-        }
-
-        buffer.WriteString(",")
-        e = next
+    for e := this.logs.Front(); e != nil; e = e.Next() {
+        logs = append(logs, e.Value)
     }
-    buffer.WriteString("]")
 
-    return buffer.Bytes(), nil
+    return json.Marshal(&logs)
 }
 
 // SetEnabled temporarily enables/disables the logger.
