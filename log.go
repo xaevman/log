@@ -15,6 +15,7 @@
 package log
 
 import (
+    "bytes"
     "container/list"
     "fmt"
     "path/filepath"
@@ -109,6 +110,33 @@ func (this *LogBuffer) ReadAll() []string {
     return results
 }
 
+// MarshalJSON implements the standard go json marshaler for the
+// LogBuffer type.
+func (this *LogBuffer) MarshalJSON() ([]byte, error) {
+    this.lock.RLock()
+    defer this.lock.RUnlock()
+
+    var buffer bytes.Buffer
+
+    buffer.WriteString("[")
+    for e := this.logs.Front(); e != nil; {
+        buffer.WriteString("\"")
+        buffer.WriteString(strings.TrimSpace(e.Value.(string)))
+        buffer.WriteString("\"")
+
+        next := e.Next()
+        if next == nil {
+            break
+        }
+
+        buffer.WriteString(",")
+        e = next
+    }
+    buffer.WriteString("]")
+
+    return buffer.Bytes(), nil
+}
+
 // SetEnabled temporarily enables/disables the logger.
 func (this *LogBuffer) SetEnabled(enabled bool) {
     this.lock.Lock()
@@ -147,6 +175,10 @@ func FormatLogMsg(name, format string, callDepth int, v ...interface{}) string {
     _, file, line, ok := runtime.Caller(callDepth)
     if ok {
         file = fmt.Sprintf(" <%s:%d>", filepath.Base(file), line)
+    }
+
+    if len(msg) < 1 {
+        return ""
     }
 
     if msg[len(msg) - 1] == '\n' {
