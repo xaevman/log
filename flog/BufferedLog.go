@@ -55,7 +55,7 @@ func (this *BufferedLog) Close() {
     this.enabled = false
     this.lock.Unlock()
 
-    this.print(xlog.FormatLogMsg(this.name, "==== Close log ====", 2))
+    this.print(xlog.NewLogMsg(this.name, "==== Close log ====", 2))
 
     // stop flush routine
     this.chClose <- nil
@@ -90,7 +90,7 @@ func (this *BufferedLog) Name() string {
 
 // Print formats and buffers a new log entry as long as the BufferedLog instance
 // is enabled.
-func (this *BufferedLog) Print(msg string) {
+func (this *BufferedLog) Print(msg *xlog.LogMsg) {
     this.lock.RLock()
     if !this.enabled {
         return
@@ -117,7 +117,7 @@ func (this *BufferedLog) asyncFlush() {
         select {
             case <-this.chClose:
                 run = false
-                this.print(xlog.FormatLogMsg(
+                this.print(xlog.NewLogMsg(
                     this.name, 
                     "Async log shutdown", 
                     3,
@@ -147,7 +147,7 @@ func (this *BufferedLog) flushLogs() {
     }
 }
 
-func (this *BufferedLog) print(msg string) {
+func (this *BufferedLog) print(msg *xlog.LogMsg) {
     this.lock.Lock()
     defer this.lock.Unlock()
     

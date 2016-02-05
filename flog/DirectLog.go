@@ -48,7 +48,7 @@ func (this *DirectLog) Close() {
 
     this.enabled = false
 
-    this.print(xlog.FormatLogMsg(
+    this.print(xlog.NewLogMsg(
         this.name,
         "==== Close log ====",
         3,
@@ -76,7 +76,7 @@ func (this *DirectLog) Name() string {
 
 // Print formats and buffers a new log entry as long as the DirectLog instance
 // is enabled.
-func (this *DirectLog) Print(msg string) {
+func (this *DirectLog) Print(msg *xlog.LogMsg) {
     this.lock.RLock()
     defer this.lock.RUnlock()
 
@@ -87,7 +87,7 @@ func (this *DirectLog) Print(msg string) {
     this.print(msg)
 }
 
-func (this *DirectLog) print(msg string) {
+func (this *DirectLog) print(msg *xlog.LogMsg) {
     log.Print(msg)
     this.logger.Print(msg)
 }

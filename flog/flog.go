@@ -44,7 +44,7 @@ type FLog interface {
     Close()
     SetEnabled(bool)
     Name() string
-    Print(msg string)
+    Print(msg *xlog.LogMsg)
 }
 
 // New returns a new FLog instance of the requested type. The backing log file is 
@@ -104,7 +104,7 @@ func New(name, logPath string, logType int) FLog {
         break
     }
 
-    initMsg := xlog.FormatLogMsg(
+    initMsg := xlog.NewLogMsg(
         name,
         "==== Log init ====",
         2,
