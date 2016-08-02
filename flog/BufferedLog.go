@@ -2,7 +2,7 @@
 //
 //  BufferedLog.go
 //
-//  Copyright (c) 2014, Jared Chavez. 
+//  Copyright (c) 2014, Jared Chavez.
 //  All rights reserved.
 //
 //  Use of this source code is governed by a BSD-style
@@ -26,7 +26,7 @@ import (
 
 // BufferedLog represents a buffered, file-backed logger and enforces a standardized
 // logging format. New logging entries are sent to a memory buffer and
-// periodically flushed to the backing file at configurable intervals 
+// periodically flushed to the backing file at configurable intervals
 // by a seperate goroutine.
 type BufferedLog struct {
     baseDir  string
@@ -80,7 +80,7 @@ func (this *BufferedLog) FlushIntervalSec() int32 {
     return atomic.LoadInt32(&this.flushSec)
 }
 
-// Name returns the friendly name of the log. 
+// Name returns the friendly name of the log.
 func (this *BufferedLog) Name() string {
     this.lock.RLock()
     defer this.lock.RUnlock()
@@ -93,6 +93,7 @@ func (this *BufferedLog) Name() string {
 func (this *BufferedLog) Print(msg *xlog.LogMsg) {
     this.lock.RLock()
     if !this.enabled {
+        this.lock.RUnlock()
         return
     }
     this.lock.RUnlock()
@@ -106,7 +107,7 @@ func (this *BufferedLog) SetFlushIntervalSec(interval int32) {
     atomic.StoreInt32(&this.flushSec, interval)
 }
 
-// asyncFlush is run in a separate goroutine and periodically flushes 
+// asyncFlush is run in a separate goroutine and periodically flushes
 // buffered entries to the backing file.
 func (this *BufferedLog) asyncFlush() {
     run := true
@@ -115,16 +116,16 @@ func (this *BufferedLog) asyncFlush() {
         flushSec := atomic.LoadInt32(&this.flushSec)
 
         select {
-            case <-this.chClose:
-                run = false
-                this.print(xlog.NewLogMsg(
-                    this.name, 
-                    "Async log shutdown", 
-                    3,
-                ))
-                continue
-            case <-time.After(time.Duration(flushSec) * time.Second):
-                this.flushLogs()
+        case <-this.chClose:
+            run = false
+            this.print(xlog.NewLogMsg(
+                this.name,
+                "Async log shutdown",
+                3,
+            ))
+            continue
+        case <-time.After(time.Duration(flushSec) * time.Second):
+            this.flushLogs()
         }
     }
 
@@ -150,7 +151,7 @@ func (this *BufferedLog) flushLogs() {
 func (this *BufferedLog) print(msg *xlog.LogMsg) {
     this.lock.Lock()
     defer this.lock.Unlock()
-    
+
     log.Print(msg)
     this.logger.Print(msg)
 }
