@@ -28,6 +28,18 @@ import (
 
 var timeFormat = "2006/01/02 15:04:05.0000"
 
+type DebugLogger interface {
+    Debug(format string, v ...interface{})
+}
+
+type ErrorLogger interface {
+    Error(format string, v ...interface{})
+}
+
+type InfoLogger interface {
+    Info(format string, v ...interface{})
+}
+
 type LogMsg struct {
     Timestamp time.Time
     Name      string
