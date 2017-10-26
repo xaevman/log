@@ -137,7 +137,7 @@ func (this *LogBuffer) Print(msg *LogMsg) {
 	}
 
 	this.logs.Value = msg
-	this.logs.Next()
+	this.logs = this.logs.Next()
 
 	this.changed = true
 }
