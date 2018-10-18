@@ -30,15 +30,16 @@ import (
 // periodically flushed to the backing file at configurable intervals
 // by a seperate goroutine.
 type BufferedLog struct {
-	baseDir  string
-	buffer   bytes.Buffer
-	shutdown *shutdown.Sync
-	enabled  bool
-	file     *os.File
-	flushSec int32
-	lock     sync.RWMutex
-	logger   *log.Logger
-	name     string
+	baseDir   string
+	buffer    bytes.Buffer
+	shutdown  *shutdown.Sync
+	enabled   bool
+	file      *os.File
+	flushSec  int32
+	hasClosed bool
+	lock      sync.RWMutex
+	logger    *log.Logger
+	name      string
 }
 
 // BaseDir returns the base directory of the file backing this BufferedLog instance.
@@ -52,23 +53,11 @@ func (this *BufferedLog) BaseDir() string {
 // Close disables the BufferedLog instance, flushes any remaining entries to disk, and
 // then closes the backing log file.
 func (this *BufferedLog) Close() {
-	needsClose := true
-
-	func() {
-		this.lock.Lock()
-		defer this.lock.Unlock()
-
-		if !this.enabled {
-			needsClose = false
-			return
-		} else {
-			this.enabled = false
-		}
-	}()
-
-	if !needsClose {
+	if this.hasClosed {
 		return
 	}
+
+	this.hasClosed = true
 
 	this.print(xlog.NewLogMsg(this.name, "==== Close log ====", 2))
 
