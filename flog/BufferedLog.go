@@ -13,6 +13,7 @@
 package flog
 
 import (
+	"github.com/xaevman/crash"
 	xlog "github.com/xaevman/log"
 	"github.com/xaevman/shutdown"
 
@@ -133,7 +134,7 @@ func (this *BufferedLog) asyncFlush() {
 				3,
 			))
 			return
-		case <-flushChan:
+		case <-this.flushChan:
 			this.flushLogs()
 		case <-time.After(time.Duration(flushSec) * time.Second):
 			this.flushLogs()
@@ -156,21 +157,21 @@ func (this *BufferedLog) flushLogs() {
 		panic(err)
 	}
 
-	count = 0
+	this.count = 0
 }
 
 func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	count++
+	this.count++
 	log.Print(msg)
 	this.logger.Print(msg)
 
-	if count > 100 {
+	if this.count > 100 {
 		go func() {
 			defer crash.HandleAll()
-			flushChan <- nil
+			this.flushChan <- nil
 		}()
 	}
 }
