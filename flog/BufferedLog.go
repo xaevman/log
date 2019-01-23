@@ -32,10 +32,12 @@ import (
 type BufferedLog struct {
 	baseDir   string
 	buffer    bytes.Buffer
+	count     uint
 	shutdown  *shutdown.Sync
 	enabled   bool
 	file      *os.File
 	flushSec  int32
+	flushChan chan interface{}
 	hasClosed bool
 	lock      sync.RWMutex
 	logger    *log.Logger
@@ -131,6 +133,8 @@ func (this *BufferedLog) asyncFlush() {
 				3,
 			))
 			return
+		case <-flushChan:
+			this.flushLogs()
 		case <-time.After(time.Duration(flushSec) * time.Second):
 			this.flushLogs()
 		}
@@ -151,12 +155,22 @@ func (this *BufferedLog) flushLogs() {
 	if err != nil {
 		panic(err)
 	}
+
+	count = 0
 }
 
 func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
+	count++
 	log.Print(msg)
 	this.logger.Print(msg)
+
+	if count > 100 {
+		go func() {
+			defer crash.HandleAll()
+			flushChan <- nil
+		}()
+	}
 }

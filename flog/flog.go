@@ -68,11 +68,12 @@ func New(name, logPath string, logType int) FLog {
 	case BufferedFile:
 
 		bLog := BufferedLog{
-			baseDir:  logPath,
-			shutdown: shutdown.New(),
-			enabled:  true,
-			flushSec: DefaultFlushIntervalSec,
-			name:     name,
+			baseDir:   logPath,
+			shutdown:  shutdown.New(),
+			enabled:   true,
+			flushSec:  DefaultFlushIntervalSec,
+			flushChan: make(chan interface{}, 0),
+			name:      name,
 		}
 
 		bLog.file = f
