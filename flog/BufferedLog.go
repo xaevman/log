@@ -171,7 +171,12 @@ func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	if this.count > 100 {
 		go func() {
 			defer crash.HandleAll()
-			this.flushChan <- nil
+			select {
+			case this.flushChan <- nil:
+				return
+			case <-time.After(5 * time.Second):
+				return
+			}
 		}()
 	}
 }
