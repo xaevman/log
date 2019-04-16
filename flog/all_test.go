@@ -2,7 +2,7 @@
 //
 //  all_test.go
 //
-//  Copyright (c) 2014, Jared Chavez. 
+//  Copyright (c) 2014, Jared Chavez.
 //  All rights reserved.
 //
 //  Use of this source code is governed by a BSD-style
@@ -17,6 +17,8 @@ import (
     "os"
     "testing"
     "time"
+
+    "github.com/xaevman/log"
 )
 
 // TestLog creates a new log, writes a few entries to it, rotates the log,
@@ -26,17 +28,17 @@ func TestLog(t *testing.T) {
     iLog := New("info", "./logs", BufferedFile)
     eLog := New("error", "./logs", DirectFile)
 
-    iLog.Print("this is a new INFO log")
-    eLog.Print("this is a new ERROR log")
-    iLog.Print("testing 123")
-    eLog.Print("testing 456")
-    iLog.Print("testing 789")
+    iLog.Print(log.NewLogMsg("info", "this is a new INFO log", 2))
+    eLog.Print(log.NewLogMsg("error", "this is a new ERROR log", 2))
+    iLog.Print(log.NewLogMsg("info", "testing 123", 2))
+    eLog.Print(log.NewLogMsg("error", "testing 456", 2))
+    iLog.Print(log.NewLogMsg("info", "testing 789", 2))
 
     iLog = Rotate(iLog)
     eLog = Rotate(eLog)
 
-    iLog.Print("testing 123 **after** rotate")
-    eLog.Print("testing 456 after rotate")
+    iLog.Print(log.NewLogMsg("info", "testing 123 **after** rotate", 2))
+    eLog.Print(log.NewLogMsg("error", "testing 456 after rotate", 2))
 
     iLog.Close()
     eLog.Close()
@@ -53,7 +55,7 @@ func TestLog(t *testing.T) {
     _, err := os.Stat("logs/info.log")
     if err != nil {
         t.Error(err)
-    }   
+    }
     _, err = os.Stat("logs/error.log")
     if err != nil {
         t.Error(err)
