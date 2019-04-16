@@ -1,0 +1,10 @@
+github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936 h1:kw1v0NlnN+GZcU8Ma8CLF2Zzgjfx95gs3/GN3vYAPpo=
+github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936/go.mod h1:r1VsdOzOPt1ZSrGZWFoNhsAedKnEd6r9Np1+5blZCWk=
+github.com/xaevman/app v0.0.0-20190208024703-544c5d335566 h1:aRdAfXMG18xYmgt6mxfxwol/2mEaqLqEkrrVdU1S+Es=
+github.com/xaevman/app v0.0.0-20190208024703-544c5d335566/go.mod h1:g2BbyvW9yn8YwhKGV7gerVE1ILiIEK5DAKxuLbD9FTo=
+github.com/xaevman/crash v0.0.0-20160116021402-4f12454dac5a h1:9+NUev+7iKRZLMpvT2qcZIzKNnjv8zrFbgOfJyllKyw=
+github.com/xaevman/crash v0.0.0-20160116021402-4f12454dac5a/go.mod h1:qIamf9elsDnd8g28smyT/eW9dMfus3Nr4Ls0ia3h2pY=
+github.com/xaevman/shutdown v0.0.0-20170619171835-a5f6f007ccad h1:UAINgirvNYZqDihHfjUYzYwTEP4O3QuObziN01KrHT4=
+github.com/xaevman/shutdown v0.0.0-20170619171835-a5f6f007ccad/go.mod h1:gQaih+7gDfLsfT8SB99SHziOPYiTxibENRngI+G82mo=
+github.com/xaevman/str v0.0.0-20160101053501-4e092892a36f h1:TW7Mzuy+Q7sQM85pc0lUeAfoyLGbjO6MB/tSTFNMr2g=
+github.com/xaevman/str v0.0.0-20160101053501-4e092892a36f/go.mod h1:Pv247uTPKbcdRWHouBNe/qpmH+LpKa7wO1IEo33z1so=

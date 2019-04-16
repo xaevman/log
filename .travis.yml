@@ -1,0 +1,15 @@
+language: go
+
+os: 
+  - windows
+  - linux
+  - osx
+
+go:
+ - "1.12"
+
+env:
+  global:
+    - GO111MODULE=on
+
+script: go test -v -race ./...
