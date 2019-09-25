@@ -156,8 +156,6 @@ func (this *BufferedLog) flushLogs() {
 	if err != nil {
 		panic(err)
 	}
-
-	this.count = 0
 }
 
 func (this *BufferedLog) print(msg *xlog.LogMsg) {
@@ -169,6 +167,7 @@ func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	this.logger.Print(msg)
 
 	if this.count > 100 {
+		this.count = 0
 		go func() {
 			defer crash.HandleAll()
 			select {
