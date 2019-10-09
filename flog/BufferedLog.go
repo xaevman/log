@@ -67,15 +67,15 @@ func (this *BufferedLog) Close() {
 	// stop flush routine
 	this.shutdown.Start()
 
+	if this.shutdown.WaitForTimeout() {
+		this.print(xlog.NewLogMsg(this.name, "Timeout waiting on shutdown", 2))
+	}
+
 	// flush logs
 	this.flushLogs()
 
 	// close file
 	this.file.Close()
-
-	if this.shutdown.WaitForTimeout() {
-		this.print(xlog.NewLogMsg(this.name, "Timeout waiting on shutdown", 2))
-	}
 }
 
 // SetEnabled temporarily enables/disables the log instance.
