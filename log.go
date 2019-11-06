@@ -26,6 +26,8 @@ import (
 	"time"
 )
 
+const maxLogLineLen = 1024
+
 var timeFormat = "2006/01/02 15:04:05.0000"
 
 type DebugLogger interface {
@@ -195,6 +197,10 @@ func NewLogMsg(name, format string, callDepth int, v ...interface{}) *LogMsg {
 		msg = format
 	} else {
 		msg = fmt.Sprintf(format, v...)
+	}
+
+	if len(msg) > maxLogLineLen {
+		msg = fmt.Sprintf("%s ... (truncated)", msg[:maxLogLineLen])
 	}
 
 	newLog := &LogMsg{
