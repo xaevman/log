@@ -26,6 +26,8 @@ import (
 	"time"
 )
 
+const blMaxBufferSize = 64 * 1024 // 64KB
+
 // BufferedLog represents a buffered, file-backed logger and enforces a standardized
 // logging format. New logging entries are sent to a memory buffer and
 // periodically flushed to the backing file at configurable intervals
@@ -33,7 +35,6 @@ import (
 type BufferedLog struct {
 	baseDir   string
 	buffer    bytes.Buffer
-	count     uint
 	shutdown  *shutdown.Sync
 	enabled   bool
 	file      *os.File
@@ -51,6 +52,14 @@ func (this *BufferedLog) BaseDir() string {
 	defer this.lock.RUnlock()
 
 	return this.baseDir
+}
+
+// BufferCap returns the current capacity of the underlying memory buffer.
+func (this *BufferedLog) BufferCap() int {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+
+	return this.buffer.Cap()
 }
 
 // Close disables the BufferedLog instance, flushes any remaining entries to disk, and
@@ -162,11 +171,10 @@ func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	this.count++
 	log.Print(msg)
 	this.logger.Print(msg)
 
-	if this.count > 100 {
+	if this.buffer.Len() > blMaxBufferSize {
 		this.count = 0
 		go func() {
 			defer crash.HandleAll()
