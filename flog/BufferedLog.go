@@ -175,7 +175,6 @@ func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	this.logger.Print(msg)
 
 	if this.buffer.Len() > blMaxBufferSize {
-		this.count = 0
 		go func() {
 			defer crash.HandleAll()
 			select {
