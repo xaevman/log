@@ -156,6 +156,13 @@ func (this *BufferedLog) flushLogs() {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
+	// flush may have just happened, so check
+	// the buffer len again before blocking on the
+	// disk
+	if this.buffer.Len() < blMaxBufferSize {
+		return
+	}
+
 	_, err := io.Copy(this.file, &this.buffer)
 	if err != nil {
 		panic(err)
