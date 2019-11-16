@@ -26,7 +26,7 @@ import (
 	"time"
 )
 
-const flushBufferSize = 1024
+const flushBufferSize = 64
 
 // Default flush interval, in seconds, for BufferedLog instances.
 const DefaultFlushIntervalSec = 5
