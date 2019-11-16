@@ -13,7 +13,6 @@
 package flog
 
 import (
-	"github.com/xaevman/crash"
 	xlog "github.com/xaevman/log"
 	"github.com/xaevman/shutdown"
 
@@ -176,20 +175,20 @@ func (this *BufferedLog) flushLogs() {
 
 func (this *BufferedLog) print(msg *xlog.LogMsg) {
 	this.lock.Lock()
-	defer this.lock.Unlock()
 
 	log.Print(msg)
 	this.logger.Print(msg)
 
 	if this.buffer.Len() > blMaxBufferSize {
-		go func() {
-			defer crash.HandleAll()
-			select {
-			case this.flushChan <- nil:
-				return
-			case <-time.After(5 * time.Second):
-				return
-			}
-		}()
+		this.lock.Unlock()
+
+		select {
+		case this.flushChan <- nil:
+			return
+		case <-time.After(1 * time.Second):
+			return
+		}
+	} else {
+		this.lock.Unlock()
 	}
 }

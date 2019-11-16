@@ -26,6 +26,8 @@ import (
 	"time"
 )
 
+const flushBufferSize = 1024
+
 // Default flush interval, in seconds, for BufferedLog instances.
 const DefaultFlushIntervalSec = 5
 
@@ -72,7 +74,7 @@ func New(name, logPath string, logType int) FLog {
 			shutdown:  shutdown.New(),
 			enabled:   true,
 			flushSec:  DefaultFlushIntervalSec,
-			flushChan: make(chan interface{}, 0),
+			flushChan: make(chan interface{}, flushBufferSize),
 			name:      name,
 		}
 
