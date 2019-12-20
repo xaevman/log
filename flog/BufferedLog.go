@@ -17,9 +17,12 @@ import (
 	"github.com/xaevman/shutdown"
 
 	"bytes"
+	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"runtime/trace"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,7 +50,9 @@ type BufferedLog struct {
 
 // BaseDir returns the base directory of the file backing this BufferedLog instance.
 func (this *BufferedLog) BaseDir() string {
-	this.lock.RLock()
+	ctx := context.Background()
+
+	trace.WithRegion(ctx, "BaseDir().acquireReadLock", this.lock.RLock)
 	defer this.lock.RUnlock()
 
 	return this.baseDir
@@ -55,7 +60,9 @@ func (this *BufferedLog) BaseDir() string {
 
 // BufferCap returns the current capacity of the underlying memory buffer.
 func (this *BufferedLog) BufferCap() int {
-	this.lock.RLock()
+	ctx := context.Background()
+
+	trace.WithRegion(ctx, "BufferCap().acquireReadLock", this.lock.RLock)
 	defer this.lock.RUnlock()
 
 	return this.buffer.Cap()
@@ -70,13 +77,14 @@ func (this *BufferedLog) Close() {
 
 	this.hasClosed = true
 
-	this.print(xlog.NewLogMsg(this.name, "==== Close log ====", 2))
+	ctx := context.Background()
+	this.print(ctx, xlog.NewLogMsg(this.name, "==== Close log ====", 2))
 
 	// stop flush routine
 	this.shutdown.Start()
 
 	if this.shutdown.WaitForTimeout() {
-		this.print(xlog.NewLogMsg(this.name, "Timeout waiting on shutdown", 2))
+		this.print(ctx, xlog.NewLogMsg(this.name, "Timeout waiting on shutdown", 2))
 	}
 
 	// flush logs
@@ -88,7 +96,9 @@ func (this *BufferedLog) Close() {
 
 // SetEnabled temporarily enables/disables the log instance.
 func (this *BufferedLog) SetEnabled(enabled bool) {
-	this.lock.Lock()
+	ctx := context.Background()
+
+	trace.WithRegion(ctx, "SetEnabled().acquireLock", this.lock.Lock)
 	defer this.lock.Unlock()
 
 	this.enabled = enabled
@@ -101,7 +111,9 @@ func (this *BufferedLog) FlushIntervalSec() int32 {
 
 // Name returns the friendly name of the log.
 func (this *BufferedLog) Name() string {
-	this.lock.RLock()
+	ctx := context.Background()
+
+	trace.WithRegion(ctx, "Name().acquireReadLock", this.lock.RLock)
 	defer this.lock.RUnlock()
 
 	return this.name
@@ -110,14 +122,16 @@ func (this *BufferedLog) Name() string {
 // Print formats and buffers a new log entry as long as the BufferedLog instance
 // is enabled.
 func (this *BufferedLog) Print(msg *xlog.LogMsg) {
-	this.lock.RLock()
+	ctx := context.Background()
+
+	trace.WithRegion(ctx, "Print().acquireReadLock", this.lock.RLock)
 	if !this.enabled {
 		this.lock.RUnlock()
 		return
 	}
 	this.lock.RUnlock()
 
-	this.print(msg)
+	this.print(ctx, msg)
 }
 
 // SetFlushIntervalSec sets the interval at which the log buffer worker
@@ -131,20 +145,24 @@ func (this *BufferedLog) SetFlushIntervalSec(interval int32) {
 func (this *BufferedLog) asyncFlush() {
 	defer this.shutdown.Complete()
 
+	ctx := context.Background()
+
 	for {
 		flushSec := atomic.LoadInt32(&this.flushSec)
 
 		select {
 		case <-this.shutdown.Signal:
-			this.print(xlog.NewLogMsg(
+			this.print(ctx, xlog.NewLogMsg(
 				this.name,
 				"Async log shutdown",
 				3,
 			))
 			return
 		case <-this.flushChan:
-			this.flushLogs()
+			trace.Log(ctx, "flushChan triggered", "")
+			trace.WithRegion(ctx, "flushLogs()", this.flushLogs)
 		case <-time.After(time.Duration(flushSec) * time.Second):
+			trace.Log(ctx, "flushSecElapsed", fmt.Sprintf("%d", flushSec))
 			this.flushLogs()
 		}
 	}
@@ -152,7 +170,9 @@ func (this *BufferedLog) asyncFlush() {
 
 // flushLogs copies the contents of the log buffer into the open log file.
 func (this *BufferedLog) flushLogs() {
-	this.lock.Lock()
+	ctx := context.Background()
+
+	trace.WithRegion(ctx, "flushLogs().acquireLock", this.lock.Lock)
 	defer this.lock.Unlock()
 
 	// flush may have just happened, so check
@@ -162,32 +182,40 @@ func (this *BufferedLog) flushLogs() {
 		return
 	}
 
+	r := trace.StartRegion(ctx, "flushLogs().write")
 	_, err := io.Copy(this.file, &this.buffer)
+	r.End()
 	if err != nil {
 		panic(err)
 	}
 
+	r = trace.StartRegion(ctx, "flushLogs().sync")
 	err = this.file.Sync()
+	r.End()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (this *BufferedLog) print(msg *xlog.LogMsg) {
-	this.lock.Lock()
+func (this *BufferedLog) print(ctx context.Context, msg *xlog.LogMsg) {
+	trace.WithRegion(ctx, "print().acquireLock", this.lock.Lock)
 
+	r := trace.StartRegion(ctx, "print().delegates")
 	log.Print(msg)
 	this.logger.Print(msg)
+	r.End()
 
 	if this.buffer.Len() > blMaxBufferSize {
 		this.lock.Unlock()
 
+		r = trace.StartRegion(ctx, "print().requestFlush")
 		select {
 		case this.flushChan <- nil:
 			return
 		case <-time.After(1 * time.Second):
 			return
 		}
+		r.End()
 	} else {
 		this.lock.Unlock()
 	}
