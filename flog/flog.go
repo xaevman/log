@@ -129,14 +129,12 @@ func Rotate(log FLog) FLog {
 
 	mkdir(mkPath)
 
-	now := time.Now()
+	now := time.Now().UTC().Unix()
 	newPath := path.Join(
 		mkPath,
 		fmt.Sprintf(
-			"%d%d%d-%s.log",
-			now.Year(),
-			now.Month(),
-			now.Day(),
+			"%d-%s.log",
+			now,
 			log.Name(),
 		),
 	)

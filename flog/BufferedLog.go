@@ -30,10 +30,15 @@ import (
 
 const blMaxBufferSize = 64 * 1024 // 64KB
 
+const (
+	FLUSH_DEFAULTS = iota
+	FLUSH_FORCED
+)
+
 // BufferedLog represents a buffered, file-backed logger and enforces a standardized
 // logging format. New logging entries are sent to a memory buffer and
 // periodically flushed to the backing file at configurable intervals
-// by a seperate goroutine.
+// by a separate goroutine.
 type BufferedLog struct {
 	baseDir   string
 	buffer    bytes.Buffer
@@ -88,7 +93,7 @@ func (this *BufferedLog) Close() {
 	}
 
 	// flush logs
-	this.flushLogs()
+	this.flushLogs(FLUSH_FORCED)
 
 	// close file
 	this.file.Close()
@@ -160,16 +165,16 @@ func (this *BufferedLog) asyncFlush() {
 			return
 		case <-this.flushChan:
 			trace.Log(ctx, "flushChan triggered", "")
-			trace.WithRegion(ctx, "flushLogs()", this.flushLogs)
+			this.flushLogs(FLUSH_DEFAULTS)
 		case <-time.After(time.Duration(flushSec) * time.Second):
 			trace.Log(ctx, "flushSecElapsed", fmt.Sprintf("%d", flushSec))
-			this.flushLogs()
+			this.flushLogs(FLUSH_FORCED)
 		}
 	}
 }
 
 // flushLogs copies the contents of the log buffer into the open log file.
-func (this *BufferedLog) flushLogs() {
+func (this *BufferedLog) flushLogs(flags int) {
 	ctx := context.Background()
 
 	trace.WithRegion(ctx, "flushLogs().acquireLock", this.lock.Lock)
@@ -178,7 +183,7 @@ func (this *BufferedLog) flushLogs() {
 	// flush may have just happened, so check
 	// the buffer len again before blocking on the
 	// disk
-	if this.buffer.Len() < blMaxBufferSize {
+	if flags == FLUSH_DEFAULTS && this.buffer.Len() < blMaxBufferSize {
 		return
 	}
 
