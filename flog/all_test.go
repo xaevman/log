@@ -16,7 +16,7 @@ import (
     "fmt"
     "os"
     "testing"
-    "time"
+    "path/filepath"
 
     "github.com/xaevman/log"
 )
@@ -25,6 +25,10 @@ import (
 // and then closes it out. At the end of the test two files should exist:
 // logs/info.log and logs/old/<date>-info.log
 func TestLog(t *testing.T) {
+    if err := os.RemoveAll("./logs"); err != nil {
+        t.Error(err)
+    }
+
     iLog := New("info", "./logs", BufferedFile)
     eLog := New("error", "./logs", DirectFile)
 
@@ -43,16 +47,23 @@ func TestLog(t *testing.T) {
     iLog.Close()
     eLog.Close()
 
-    now := time.Now()
+    oldLogs, err := filepath.Glob("./logs/old/*info.log")
+    if err != nil {
+        t.Error(err)
+    }
+    if len(oldLogs) != 1 {
+        t.Error(fmt.Errorf("More than one old info.log file found"))
+    }
 
-    newPath := fmt.Sprintf(
-        "logs/old/%d%d%d-",
-        now.Year(),
-        now.Month(),
-        now.Day(),
-    )
+    oldLogs, err = filepath.Glob("./logs/old/*error.log")
+    if err != nil {
+        t.Error(err)
+    }
+    if len(oldLogs) != 1 {
+        t.Error(fmt.Errorf("More than one old error.log file found"))
+    }
 
-    _, err := os.Stat("logs/info.log")
+    _, err = os.Stat("logs/info.log")
     if err != nil {
         t.Error(err)
     }
@@ -60,12 +71,7 @@ func TestLog(t *testing.T) {
     if err != nil {
         t.Error(err)
     }
-    _, err = os.Stat(newPath + "info.log")
-    if err != nil {
-        t.Error(err)
-    }
-    _, err = os.Stat(newPath + "error.log")
-    if err != nil {
-        t.Error(err)
-    }
+
+
+
 }
